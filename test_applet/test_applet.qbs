@@ -7,5 +7,5 @@ DynamicLibrary {
 
     cpp.defines: ["TA_PLUGIN"]
 
-    files: ["test_applet.c"]
+    files: ["test_applet.c", "../include/ta_configuration.h", "ta_configuration.c"]
 }
