@@ -3,6 +3,6 @@ import qbs
 Project {
     name: "TrustedApplications"	
     references: [
-        "test_applet/test_applet.qbs"
+        "ta_conn_test_app/ta_conn_test_app.qbs"
     ]
 }
