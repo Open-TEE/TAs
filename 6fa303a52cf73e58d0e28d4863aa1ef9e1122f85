@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a6b29fe_e9a19daa",
+        "filename": "TrustedApplications.qbs",
+        "patchSetId": 1
+      },
+      "lineNbr": 4,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2014-11-03T11:11:58Z",
+      "side": 1,
+      "message": "white space",
+      "range": {
+        "startLine": 4,
+        "startChar": 31,
+        "endLine": 4,
+        "endChar": 32
+      },
+      "revId": "6fa303a52cf73e58d0e28d4863aa1ef9e1122f85",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
