@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "7a6b29fe_efeeac21",
+        "filename": "smoke_test_TAs/keep_alive_ta/keep_alive_ta.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 37,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2014-11-11T12:54:12Z",
+      "side": 1,
+      "message": "Not for these tests. If we run these tests 4*20*500 time then.. Maybe we do not notice if some of those prints are missed.",
+      "parentUuid": "7a6b29fe_efa06cf6",
+      "range": {
+        "startLine": 37,
+        "startChar": 32,
+        "endLine": 37,
+        "endChar": 39
+      },
+      "revId": "263398985077d272685dd631b0273e15acbdb622",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7a6b29fe_4fa6c011",
         "filename": "smoke_test_TAs/keep_alive_ta_random/keep_alive_ta_random.c",
         "patchSetId": 2
@@ -36,6 +60,30 @@
       "writtenOn": "2014-11-11T12:45:25Z",
       "side": 1,
       "message": "exit will kill the process, or do you catch 4 in the manager diring sigchld to see the panic ?",
+      "range": {
+        "startLine": 52,
+        "startChar": 2,
+        "endLine": 52,
+        "endChar": 6
+      },
+      "revId": "263398985077d272685dd631b0273e15acbdb622",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a6b29fe_4ff400f2",
+        "filename": "smoke_test_TAs/keep_alive_ta_random/keep_alive_ta_random.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2014-11-11T12:54:12Z",
+      "side": 1,
+      "message": "Dirty solution, but yes. TA will have its exit values in future..",
+      "parentUuid": "7a6b29fe_4fa6c011",
       "range": {
         "startLine": 52,
         "startChar": 2,
