@@ -40,11 +40,18 @@ void TA_EXPORT TA_DestroyEntryPoint(void)
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 					      TEE_Param params[4], void **sessionContext)
 {
+	int i;
 	paramTypes = paramTypes;
-	params = params;
 	sessionContext = sessionContext;
+	uint8_t *mem_data = (uint8_t *)(params[1].memref.buffer);
 
 	OT_LOG(LOG_ERR, "Calling the Open session entry point");
+
+	OT_LOG(LOG_ERR, "param value is %d", params[0].value.a);
+
+	for (i = 0; i < 20; i++) {
+		OT_LOG(LOG_ERR, "Mem value : %d", *(mem_data + i));
+	}
 
 	return TEE_SUCCESS;
 }
