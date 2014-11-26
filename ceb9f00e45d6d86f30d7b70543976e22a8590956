@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fafc7978_71a0f9f4",
+        "filename": "example_digest_ta/example_digest_ta.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 51,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2014-11-26T10:01:46Z",
+      "side": 1,
+      "message": "would it make more sense to define these to be the same values and the internal api\n\ne.g.\nTEE_ALG_HMAC_SHA512 \u003d 0x30000006,\n\nThen you can avoid the switch statement below.  or even, move all these enumerated types out of the tee_crypto_api.h and into a common header for the enums, which can then be included in the CA test applications ?",
+      "range": {
+        "startLine": 51,
+        "startChar": 0,
+        "endLine": 51,
+        "endChar": 30
+      },
+      "revId": "ceb9f00e45d6d86f30d7b70543976e22a8590956",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
