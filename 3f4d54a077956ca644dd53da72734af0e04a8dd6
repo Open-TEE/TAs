@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fafc7978_914d9d75",
+        "filename": "tester_TA/tester_TA.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 73,
+      "author": {
+        "id": 1000798
+      },
+      "writtenOn": "2014-11-26T08:35:32Z",
+      "side": 1,
+      "message": "Maybe remove these when the implementation is complete?",
+      "range": {
+        "startLine": 67,
+        "startChar": 0,
+        "endLine": 73,
+        "endChar": 5
+      },
+      "revId": "3f4d54a077956ca644dd53da72734af0e04a8dd6",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
