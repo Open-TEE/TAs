@@ -1,5 +1,5 @@
 /*****************************************************************************
-** Copyright (C) 2013 Intel Corporation.                                    **
+** Copyright 2014 Hannu Lahtinen hannu.lahtinen@student.tut.fi              **
 **                                                                          **
 ** Licensed under the Apache License, Version 2.0 (the "License");          **
 ** you may not use this file except in compliance with the License.         **
@@ -12,14 +12,27 @@
 ** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. **
 ** See the License for the specific language governing permissions and      **
 ** limitations under the License.                                           **
+**                                                                          **
+** TrustedApplication for Open-TEE project that is indended                 **
+** to test handling of SHA calculations through out the project             **
+**                                                                          **
+** This file was created as part of an assignment work                      **
+** for course "Turvallinen ohjelmointi part 2" in                           **
+** Tampere University of Technology                                         **
+**                                                                          **
+** NOTE: This application is based on example_digest_ta found at:           **
+** https://github.com/Open-TEE/TAs/tree/master/example_digest_ta            **
 *****************************************************************************/
 
-/* NOTE!!
+/*
+ * Pretty minuscule changes from Tanel Dettenbo's example.
+ * Just bringing the size in a separate parameter
+ * and removed MD5 handling.
  *
- * This is an example. It might not have the most perfect design choices and implementation.
- * It is servinc purpose of showing how you could do the most simplest SHA/MD5 hash
- *
- * NOTE!!
+ * I chose not to handle buffer overflow here.
+ * It should be either handled on the CA side or
+ * it is purposefully being passed as an overflow to test how
+ * the internal api handles it.
  */
 
 #include "tee_internal_api.h" /* TA envrionment */
@@ -51,7 +64,7 @@ SET_TA_PROPERTIES(
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
-	OT_LOG(LOG_ERR, "Calling the create entry point");
+	OT_LOG(LOG_ERR, "Calling the Create entry point");
 
 	/* No functionality */
 
@@ -97,7 +110,7 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 		break;
 
 	default:
-		OT_LOG(LOG_ERR, "Unknow hash algorithm")
+		OT_LOG(LOG_ERR, "Unknown hash algorithm")
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
@@ -130,7 +143,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t c
                 (uint32_t *)&params[2].memref.size);
 
 	} else {
-		OT_LOG(LOG_ERR, "Unknow command ID");
+		OT_LOG(LOG_ERR, "Unknown command ID");
 	}
 
 	return TEE_SUCCESS;
