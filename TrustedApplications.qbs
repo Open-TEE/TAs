@@ -6,5 +6,6 @@ Project {
         "ta_conn_test_app/ta_conn_test_app.qbs",
         "smoke_test_TAs/smoke_test_TAs.qbs",
         "example_digest_ta/example_digest_ta.qbs",
+        "trusted_ui_example_ta/trusted_ui_example_ta.qbs"
     ]
 }
