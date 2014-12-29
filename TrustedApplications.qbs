@@ -9,6 +9,7 @@ Project {
                     "smoke_test_TAs/smoke_test_TAs.qbs",
                     "example_digest_ta/example_digest_ta.qbs",
                     "usr_study_ta/usr_study_ta.qbs",
+                    "trusted_ui_example_ta/trusted_ui_example_ta.qbs",
                 ]
 
         if (File.exists(sourceDirectory + "/TAs/pkcs11_ta/pkcs11_ta.qbs")) {
