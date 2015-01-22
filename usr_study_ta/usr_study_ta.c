@@ -52,6 +52,7 @@ struct inner_transaction {
 	struct inner_transaction *next;
 	struct transaction info;
 	void *message;
+	void *digest;
 };
 
 /* Implication is storing executed transactions into RAM. GP standard is providing secure storage,
@@ -64,8 +65,14 @@ static struct account usr_account;
 /* Time when account is created */
 static TEE_Time account_created;
 
+/* Application is using GP provided digest calculation functionality */
+static TEE_OperationHandle digest_handler;
+
 /* Macro is needed with overflow checking */
 #define UINT32_t_MAX 0xffffffff
+
+/* Used digest is SHA256 */
+#define DIGEST_SIZE 32
 
 /*
  * Release transaction
@@ -126,6 +133,35 @@ static struct inner_transaction *get_transaction_by_index(uint32_t index)
 	return trans;
 }
 
+static TEE_Result calc_digest(struct inner_transaction *transaction,
+			      void *digest, uint32_t digest_len)
+{
+	TEE_DigestUpdate(digest_handler, &transaction->info, sizeof(struct transaction));
+
+	return TEE_DigestDoFinal(digest_handler, transaction->message,
+				 transaction->info.msg_len, digest, &digest_len);
+}
+
+static TEE_Result add_digest_to_transaction(struct inner_transaction *new_trans)
+{
+	TEE_Result ret;
+
+	/* Malloc space for transaction message */
+	new_trans->digest = TEE_Malloc(DIGEST_SIZE, 0);
+	if (!new_trans->digest) {
+		OT_LOG(LOG_ERR, "Out of memory")
+		return TEE_ERROR_OUT_OF_MEMORY;
+	}
+
+	new_trans = NULL;
+	ret = calc_digest(new_trans, new_trans->digest, DIGEST_SIZE);
+
+	if (ret != TEE_SUCCESS)
+		TEE_Free(new_trans->digest);
+
+	return ret;
+}
+
 /*
  * Function executes transaction
  */
@@ -133,16 +169,19 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 				   uint32_t paramTypes, TEE_Param *params)
 {
 	struct inner_transaction *new_trans = NULL;
+	TEE_Result ret = TEE_SUCCESS;
 
 	/* Check parameter types */
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT) {
 		OT_LOG(LOG_ERR, "Expected value input type as a index 0 parameter")
-		return TEE_ERROR_BAD_PARAMETERS;
+		ret = TEE_ERROR_BAD_PARAMETERS;
+		goto end;
 	}
 
 	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_INOUT) {
 		OT_LOG(LOG_ERR, "Expected memref inout as a index 1 parameter")
-		return TEE_ERROR_BAD_PARAMETERS;
+		ret = TEE_ERROR_BAD_PARAMETERS;
+		goto end;
 	}
 
 	/* First must check if we can complite transaction
@@ -151,28 +190,31 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 
 	if (params[0].value.a > UINT32_t_MAX - usr_account.balance) {
 		OT_LOG(LOG_ERR, "Transaction not executed due overflow error");
-		return TEE_ERROR_OVERFLOW;
+		ret = TEE_ERROR_OVERFLOW;
+		goto end;
 	}
 
 	if (transaction_type == USR_AC_CMD_WITHDRAW &&
 	    usr_account.balance < params[0].value.a) {
 		OT_LOG(LOG_ERR, "Transaction not executed due infisiend funds");
-		return TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_GENERIC;
+		goto end;
 	}
 
 	/* Malloc space for new transaction */
 	new_trans = TEE_Malloc(sizeof(struct inner_transaction), 0);
 	if (!new_trans) {
 		OT_LOG(LOG_ERR, "Out of memory")
-		return TEE_ERROR_OUT_OF_MEMORY;
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto end;
 	}
 
 	/* Malloc space for transaction message */
 	new_trans->message = TEE_Malloc(params[1].memref.size, 0);
 	if (!new_trans->message) {
 		OT_LOG(LOG_ERR, "Out of memory")
-		TEE_Free(new_trans);
-		return TEE_ERROR_OUT_OF_MEMORY;
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto end;
 	}
 
 	/* Update balance */
@@ -186,10 +228,20 @@ static TEE_Result exec_transaction(uint32_t transaction_type,
 	new_trans->info.msg_len = params[1].memref.size;
 	new_trans->info.amount = params[0].value.a;
 
+	ret = add_digest_to_transaction(new_trans);
+	if (ret != TEE_SUCCESS)
+		goto end;
+
 	/* Add new transaction to linked list */
 	add_transaction(new_trans);
 
-	return TEE_SUCCESS;
+	return ret;
+
+end:
+	if (new_trans)
+		TEE_Free(new_trans->message);
+	TEE_Free(new_trans);
+	return ret;
 }
 
 /*
@@ -284,6 +336,8 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 
 	TEE_GetSystemTime(&account_created);
 
+	TEE_AllocateOperation(&digest_handler, TEE_ALG_SHA256, TEE_MODE_DIGEST, 0);
+
 	return TEE_SUCCESS;
 }
 
@@ -321,6 +375,8 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	sessionContext = sessionContext; /* Not used */
 
 	rm_all_transactions();
+
+	TEE_FreeOperation(digest_handler);
 }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
