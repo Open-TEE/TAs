@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a106d94_51885f22",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-03-24T15:38:16Z",
+      "side": 1,
+      "message": "maybe better to use a string that defines the use of this object e.g.:\n\nstatic char mono_counter[] \u003d \"MONO_COUNTER\";",
+      "range": {
+        "startLine": 31,
+        "startChar": 28,
+        "endLine": 31,
+        "endChar": 38
+      },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_11c4273f",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 88,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-03-24T15:38:16Z",
+      "side": 1,
+      "message": "you are assuming that all errors are a failure to create the object, it may already exist.  If it returns \"TEE_ERROR_ACCESS_CONFLICT\" then it means that the object already exists and does not need to be created, so it is successful.\n\nA potentially \"safer\" way is to check if the return value from TEE_OpenPersistentObject() and see if it is \"TEE_ERROR_ITEM_NOT_FOUND\" then to call create??",
+      "range": {
+        "startLine": 88,
+        "startChar": 12,
+        "endLine": 88,
+        "endChar": 23
+      },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_3194c336",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-03-24T15:38:16Z",
+      "side": 1,
+      "message": "return SUCCESS even on failure?",
+      "range": {
+        "startLine": 95,
+        "startChar": 8,
+        "endLine": 95,
+        "endChar": 19
+      },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_f1c06b2c",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 103,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-03-24T15:38:16Z",
+      "side": 1,
+      "message": "on the wrong line, should be one below",
+      "range": {
+        "startLine": 103,
+        "startChar": 11,
+        "endLine": 103,
+        "endChar": 20
+      },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_91e777e4",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 130,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-03-24T15:38:16Z",
+      "side": 1,
+      "message": "use \"TEE_PARAM_TYPE_GET\" to ensure that you are getting a buffer in params[0] first before derefferencing it or else you can have a buffer overflow.  Also this is going to be command specific, so the param[0] might hold a different data type based on the commandID, so call it under \"case CMD_GET_CTR:\" below",
+      "range": {
+        "startLine": 130,
+        "startChar": 0,
+        "endLine": 130,
+        "endChar": 60
+      },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
