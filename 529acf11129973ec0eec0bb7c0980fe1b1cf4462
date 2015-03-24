@@ -25,6 +25,125 @@
     },
     {
       "key": {
+        "uuid": "1a106d94_f17d0bb3",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 33,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "Function can not return error value. Maybe function return value could be TEE_Result and counter value will be returned as a reference parameter?",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_d10baf29",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 38,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "uint64_t buffer \u003d 0, counter_value \u003d 0;\n\nCould counter_value renamed like next_value and buffer to previous_value ? Because buffer is not that great name :\\",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_7172bbe6",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "You are not checking return value",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_b17393e6",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 54,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "counter_value \u003d buffer++; ? And remove line 54 : ++buffer;",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_b121d3b6",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 61,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "Maybe this should set some error bit for indicating that error is occured? Now error is only logged, but no action is taken. \n\nMaybe a function in TA that is returning the state of monotonic counter? Paranoic application could always check if that function return value..",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_311de374",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 67,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "See my comment above.",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_910c9796",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 83,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "Not needed print?",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1a106d94_11c4273f",
         "filename": "ta_services/ta_services.c",
         "patchSetId": 2
@@ -94,6 +213,40 @@
     },
     {
       "key": {
+        "uuid": "1a106d94_9525a2ad",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "Variable not needed.",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_3117a3a5",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 129,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "^^ 3 x Why ? :)",
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1a106d94_91e777e4",
         "filename": "ta_services/ta_services.c",
         "patchSetId": 2
@@ -111,6 +264,23 @@
         "endLine": 130,
         "endChar": 60
       },
+      "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_b5209e9c",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 2
+      },
+      "lineNbr": 142,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-03-24T16:31:32Z",
+      "side": 1,
+      "message": "Session context is not used. This is causing seg fault",
       "revId": "529acf11129973ec0eec0bb7c0980fe1b1cf4462",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
