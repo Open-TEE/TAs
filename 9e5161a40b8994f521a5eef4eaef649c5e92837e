@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a106d94_0b8bd31f",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 141,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-04-27T07:21:18Z",
+      "side": 1,
+      "message": "param types is used below",
+      "range": {
+        "startLine": 141,
+        "startChar": 14,
+        "endLine": 141,
+        "endChar": 24
+      },
+      "revId": "9e5161a40b8994f521a5eef4eaef649c5e92837e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a106d94_eb8f5728",
+        "filename": "ta_services/ta_services.c",
+        "patchSetId": 3
+      },
+      "lineNbr": 142,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-04-27T07:21:18Z",
+      "side": 1,
+      "message": "commandID is used below.  This \"trick\" of x \u003d x is only used to silence the compiler when a variable that is passed into a function is unused",
+      "range": {
+        "startLine": 142,
+        "startChar": 13,
+        "endLine": 142,
+        "endChar": 22
+      },
+      "revId": "9e5161a40b8994f521a5eef4eaef649c5e92837e",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
