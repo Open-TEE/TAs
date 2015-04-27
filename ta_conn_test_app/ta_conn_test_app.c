@@ -73,12 +73,26 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
 						uint32_t paramTypes, TEE_Param params[4])
 {
+	int i;
+	uint8_t *mem_data = (uint8_t *)(params[1].memref.buffer);
+
 	sessionContext = sessionContext;
 	commandID = commandID;
 	paramTypes = paramTypes;
-	params = params;
 
-	OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
+	if (commandID == 0) {
+		OT_LOG(LOG_ERR, "Calling the Invoke command entry point");
 
+	} else if (commandID == 1) {
+		if (params[1].memref.buffer == NULL) {
+			OT_LOG(LOG_ERR, "NULL ???????????????");
+			return TEEC_ERROR_BAD_PARAMETERS;
+		}
+
+		for (i = 0; i < 20; i++) {
+			/* return some data to the user */
+			mem_data[i] |= 1;
+		}
+	}
 	return TEE_SUCCESS;
 }
