@@ -14,20 +14,126 @@
 ** limitations under the License.                                           **
 *****************************************************************************/
 
+#include "conn_test_ctl.h"
 #include "tee_internal_api.h"
 #include "tee_logging.h"
 
 #ifdef TA_PLUGIN
 #include "tee_ta_properties.h"
 
+/* UUID must be unique */
 SET_TA_PROPERTIES(
-    { 0x3E93632E, 0xA710, 0x469E, { 0xAC, 0xC8, 0x5E, 0xDF, 0x8C, 0x85, 0x90, 0xE1 } }, 512, 255, 1,
-    1, 1)
+	{ 0x12345678, 0x8765, 0x4321, { 'T', 'A', 'C', 'O', 'N', 'N', 'T', 'E'} }, /* UUID */
+		512, /* dataSize */
+		255, /* stackSize */
+		1, /* singletonInstance */
+		1, /* multiSession */
+		0) /* instanceKeepAlive */
 #endif
+
+
+
+
+
+static TEE_Result check_full_treat_params(struct full_fn_params *fn_params,
+					  uint32_t paramTypes,
+					  TEE_Param *params)
+{
+	uint32_t i;
+
+	/* Check parameter type */
+	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INOUT) {
+		OT_LOG(LOG_ERR, "Expected value inout type as index 0 parameter");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_INOUT ||
+	    TEE_PARAM_TYPE_GET(paramTypes, 2) != TEE_PARAM_TYPE_MEMREF_INOUT ||
+	    TEE_PARAM_TYPE_GET(paramTypes, 3) != TEE_PARAM_TYPE_MEMREF_INOUT) {
+		OT_LOG(LOG_ERR, "Expected buffer inout type as index 1,2,3 parameter");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Param 0 */
+	if (params[0].value.a != IN_VALUE_A) {
+		OT_LOG(LOG_ERR, "Not expected parameter at 0 (value a)");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	if (params[0].value.b != IN_VALUE_B) {
+		OT_LOG(LOG_ERR, "Not expected parameter at 0 (value b)");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Param 1 & 2 */
+	for (i = 1; i < 3; i++) {
+
+		if (SIZE_OF_VEC(fn_params->in_vector) != params[i].memref.size) {
+			OT_LOG(LOG_ERR, "Not expected parameter at %u (wrong buffer length)", i);
+			return TEE_ERROR_BAD_PARAMETERS;
+		}
+
+		if (TEE_MemCompare(fn_params->in_vector, params[1].memref.buffer,
+				   params[1].memref.size)) {
+			OT_LOG(LOG_ERR, "Not expected parameter at %u (wrong data)", i);
+			return TEE_ERROR_BAD_PARAMETERS;
+		}
+	}
+
+	/* Param 3, just length */
+	if (RAND_BUFFER_SIZE != params[3].memref.size) {
+		OT_LOG(LOG_ERR, "Not expected parameter at 3 (wrong buffer length)");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	return TEE_SUCCESS;
+}
+
+static void fill_full_treat_response(struct full_fn_params *fn_params,
+				     TEE_Param *params)
+{
+	uint32_t i;
+
+	/* Param 0 */
+	params[0].value.a = OUT_VALUE_A;
+	params[0].value.b = OUT_VALUE_B;
+
+	/* Param 1 & 2 */
+	for (i = 1; i < 3; i++) {
+		TEE_MemMove(params[i].memref.buffer,
+				fn_params->out_vector, SIZE_OF_VEC(fn_params->out_vector));
+		params[i].memref.size = SIZE_OF_VEC(fn_params->out_vector);
+	}
+
+	/* Param 3 */
+	reverse_buffer(params[3].memref.buffer, params[3].memref.size, &params[3].memref.size);
+}
+
+static TEE_Result handle_full_treat_params(uint32_t paramTypes,
+					   TEE_Param *params)
+{
+	struct full_fn_params fn_params = {{IN_KNOWN_VECTOR}, {OUT_KNOWN_VECTOR}, {0}, 0};
+	TEE_Result tee_rv = TEE_SUCCESS;
+
+	tee_rv = check_full_treat_params(&fn_params, paramTypes, params);
+	if (tee_rv != TEE_SUCCESS)
+		return tee_rv;
+
+	fill_full_treat_response(&fn_params, params);
+
+	return tee_rv;
+}
+
+
+
+
+
 
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
 	OT_LOG(LOG_INFO, "Calling the create entry point");
+
+	/* Run storage tests and crypto stuff */
 
 	return TEE_SUCCESS;
 }
@@ -35,33 +141,25 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
 	OT_LOG(LOG_INFO, "Calling the Destroy entry point");
+	/* Run storage tests and crypto stuff */
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
-					      TEE_Param params[4], void **sessionContext)
+					      TEE_Param params[4],
+					      void **sessionContext)
 {
-	int i;
-	paramTypes = paramTypes;
+	TEE_Result tee_rv = TEE_SUCCESS;
 	sessionContext = sessionContext;
-	uint8_t *mem_data = (uint8_t *)(params[1].memref.buffer);
 
 	OT_LOG(LOG_INFO, "Calling the Open session entry point");
 
-	OT_LOG(LOG_INFO, "param value is %d", params[0].value.a);
+	tee_rv = handle_full_treat_params(paramTypes, params);
+	if (tee_rv != TEE_SUCCESS)
+		return tee_rv;
 
-	OT_LOG(LOG_INFO, "param mem data size is %zu", params[1].memref.size);
+	/* Run storage tests and crypto stuff */
 
-	if (params[1].memref.buffer == NULL)
-		OT_LOG(LOG_INFO, "NULL ???????????????");
-
-	mem_data[26] = 0;
-	OT_LOG(LOG_INFO, "Mem value : %s", (char *)mem_data);
-	for (i = 0; i < 20; i++) {
-		/* return some data to the user */
-		mem_data[i] = 'y';
-	}
-
-	return TEE_SUCCESS;
+	return tee_rv;
 }
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
@@ -71,34 +169,20 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	OT_LOG(LOG_INFO, "Calling the Close session entry point");
 }
 
-TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext, uint32_t commandID,
-						uint32_t paramTypes, TEE_Param params[4])
+TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
+						uint32_t commandID,
+						uint32_t paramTypes,
+						TEE_Param params[4])
 {
-	int i;
-	uint8_t *mem_data[3];
-
-	for (i = 0; i < 3; i++)
-		mem_data[i] = (uint8_t *)(params[1+i].memref.buffer);
-
+	TEE_Result tee_rv = TEE_SUCCESS;
 	sessionContext = sessionContext;
 	commandID = commandID;
-	paramTypes = paramTypes;
 
-	if (commandID == 0) {
-		OT_LOG(LOG_INFO, "Calling the Invoke command entry point");
+	tee_rv = handle_full_treat_params(paramTypes, params);
+	if (tee_rv != TEE_SUCCESS)
+		return tee_rv;
 
-	} else if (commandID == 1) {
-		if (params[1].memref.buffer == NULL) {
-			OT_LOG(LOG_INFO, "NULL ???????????????");
-			return TEEC_ERROR_BAD_PARAMETERS;
-		}
+	/* Parser*/
 
-		for (i = 0; i < 20; i++) {
-			/* return some data to the user */
-			mem_data[0][i] |= 1;
-			mem_data[1][i] |= 4;
-			mem_data[2][i] |= 8;
-		}
-	}
 	return TEE_SUCCESS;
 }
