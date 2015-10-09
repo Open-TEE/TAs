@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "baada198_670f7ce2",
+        "filename": "omnishare_ta/omnishare_ta.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 283,
+      "author": {
+        "id": 1000797
+      },
+      "writtenOn": "2015-10-09T15:22:59Z",
+      "side": 1,
+      "message": "should you probably check that buffer is not NULL, I know OpenTEE internals check this, but ... ?",
+      "range": {
+        "startLine": 283,
+        "startChar": 55,
+        "endLine": 283,
+        "endChar": 61
+      },
+      "revId": "ed7dd9f48c74aa6a121969542b7fb60b60b34583",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
+    }
+  ]
+}
