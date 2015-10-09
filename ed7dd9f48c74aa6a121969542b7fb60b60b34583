@@ -22,6 +22,30 @@
       "revId": "ed7dd9f48c74aa6a121969542b7fb60b60b34583",
       "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "baada198_925ccc27",
+        "filename": "omnishare_ta/omnishare_ta.c",
+        "patchSetId": 8
+      },
+      "lineNbr": 283,
+      "author": {
+        "id": 1000804
+      },
+      "writtenOn": "2015-10-09T21:27:15Z",
+      "side": 1,
+      "message": "I do not know. Adding the check is not a problem, but I kind of assuming that the OpenTEE framework is passing a valid parameter.. If we are going to add the check, it should also add to another places eg. encryption IN and OUT buffers..",
+      "parentUuid": "baada198_670f7ce2",
+      "range": {
+        "startLine": 283,
+        "startChar": 55,
+        "endLine": 283,
+        "endChar": 61
+      },
+      "revId": "ed7dd9f48c74aa6a121969542b7fb60b60b34583",
+      "serverId": "d5d70762-12d0-45a1-890d-524b12d3f735",
+      "unresolved": false
     }
   ]
 }
