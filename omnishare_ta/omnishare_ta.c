@@ -116,27 +116,56 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 	TEE_OperationHandle rsa_operation = NULL; /* Opaque handle. */
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
 
-	/* Allocating RSA operation. TEE_AllocateOperation: TEE Core API p-140 */
-	tee_rv = TEE_AllocateOperation(&rsa_operation, TEE_ALG_RSAES_PKCS1_V1_5,
-				       mode, BYTES2BITS(OMS_RSA_MODULU_SIZE));
+	/* TODO: Alloc RSA operation
+	 *
+	 * Our goal is to implement RSA operation and all is beginning with allocating a proper
+	 * operation handle. Every operation is requireing a operation handle even if they
+	 * are only one stage operations.
+	 *
+	 * Call params: algorithm is TEE_ALG_RSAES_PKCS1_V1_5
+	 * Call params: for mode see this function parameters
+	 * Call params; Key size is defined OMS_RSA_MODULU_SIZE
+	 *
+	 * Hint: TEE_AllocateOperation: TEE Core API p-140
+	 * Hint: Use BYTES2BITS macro for converting OMS_RSA_MODULU_SIZE to bits*/
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateOperation failed: 0x%x", tee_rv);
 		goto err;
 	}
 
-	/* Setting operation key. RSA key handle is opened in create entry point.
-	 * TEE_SetOperationKey: TEE Core API p-149 */
-	tee_rv = TEE_SetOperationKey(rsa_operation, oms_RSA_keypair_object);
+
+	/* TODO: Set RSA operation key
+	 *
+	 * Next step is set a key to operation. Omnishare TA RSA key handle is open (at create
+	 * entry point function) and ready for use.
+	 *
+	 * Call params: RSA key can be found from oms_RSA_keypair_object -variable
+	 *
+	 * Hint: TEE_SetOperationKey: TEE Core API p-149 */
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_SetOperationKey failed: 0x%x", tee_rv);
 		goto err;
 	}
 
+
+	/* TODO RSA operations
+	 *
+	 * Pre work is done and now we can proceed to actual encrypt and decrypt functions. This
+	 * function is only wrapping RSA encrypt and RSA decrypt functions. Fill our function call
+	 * below into if-else if-else.
+	 *
+	 * Call params: srcData is in_data
+	 * Call params: srcLen in in_data_len
+	 * Call params: dstData is out_data
+	 * Call params: dstLen is out_data_len
+	 *
+	 * Hint: TEE_AsymmetricDecrypt: TEE Core API p-167
+	 * Hint: TEE_AsymmetricEncrypt: TEE Core API p-167 */
+
 	if (mode == TEE_MODE_ENCRYPT) {
 
-		/* Encrypting. TEE_AsymmetricDecrypt: TEE Core API p-167 */
-		tee_rv = TEE_AsymmetricEncrypt(rsa_operation, NULL, 0, in_data,
-					       in_data_len, out_data, out_data_len);
 		if (tee_rv != TEE_SUCCESS) {
 			OT_LOG(LOG_ERR, "TEE_AsymmetricEncrypt failed : 0x%x", tee_rv);
 			goto err;
@@ -144,9 +173,6 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 
 	} else if (mode == TEE_MODE_DECRYPT) {
 
-		/* Decrypting. TEE_AsymmetricDecrypt: TEE Core API p-167 */
-		tee_rv = TEE_AsymmetricDecrypt(rsa_operation, NULL, 0, in_data,
-					       in_data_len, out_data, out_data_len);
 		if (tee_rv != TEE_SUCCESS) {
 			OT_LOG(LOG_ERR, "TEE_AsymmetricDecrypt failed : 0x%x", tee_rv);
 			goto err;
@@ -158,7 +184,15 @@ static TEE_Result wrap_oms_RSA_operation(TEE_OperationMode mode,/*TEE_OperationM
 	}
 
 err:
-	/* Freeing operation. TEE_FreeOperation: TEE Core API p-144 */
+	/* TODO: RSA operation free
+	 *
+	 * For now we are finished with RSA operation and we are not needing it any more in this
+	 * function and threfore it should be freed or else we would leak memory.
+	 *
+	 * Call params: Our operation handle
+	 *
+	 * Hint: TEE_FreeOperation: TEE Core API p-144 */
+
 	TEE_FreeOperation(rsa_operation);
 	return tee_rv;
 }
@@ -187,35 +221,73 @@ static TEE_Result wrap_aes_operation(TEE_ObjectHandle key, /* Opaque handle */
 	TEE_OperationHandle aes_operation = NULL; /* Opaque handle */
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
 
-	/* Allocating RSA operation. TEE_AllocateOperation: TEE Core API p-140 */
-	tee_rv = TEE_AllocateOperation(&aes_operation,
-				       TEE_ALG_AES_CTR, mode, BYTES2BITS(OMS_AES_SIZE));
+	/* TODO: Allocate AES operation
+	 *
+	 * This function is beginning as our wrap_oms_RSA_operation -function. We will be needing
+	 * an operation handle and then we will be setting a key to it.
+	 *
+	 * Call params: Algorithm is TEE_ALG_AES_CTR
+	 * Call params: Key size is defined OMS_AES_SIZE
+	 * Call params: For Mode see this function paramters
+	 *
+	 * Hint: TEE_AllocateOperation: TEE Core API p-140
+	 * Hint: Use BYTES2BITS macro for converting OMS_RSA_MODULU_SIZE to bits */
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateOperation failed (TEE_ALG_AES_CTR) : 0x%x", tee_rv);
 		goto err;
 	}
 
-	/* Setting operation key. TEE_SetOperationKey: TEE Core API p-149 */
-	tee_rv = TEE_SetOperationKey(aes_operation, key);
+
+	/* TODO: Set AES operation key
+	 *
+	 * As explained, set a key
+	 *
+	 * Call params: See this function params about the Key
+	 *
+	 * Hint: TEE_SetOperationKey: TEE Core API p-149 */
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_SetOperationKey failed: 0x%x", tee_rv);
 		goto err;
 	}
 
-	/* Initing cipher operation.
-	 * TEE_CipherInit: TEE Core API p-155 */
-	TEE_CipherInit(aes_operation, IV, IV_len);
 
-	/* Omnishare TA is supporting only small files and therefore there is no need for
-	 * "pipeline" style encrypting or decrypting. The do final can do it in one go
-	 * TEE_CipherDoFinal: TEE Core API p-157 */
-	tee_rv = TEE_CipherDoFinal(aes_operation, in_data, in_data_len, out_data, out_data_len);
+	/* TODO: Init cipher
+	 *
+	 * Initialize operation to be cipher. AES CTS is defined into cipher.
+	 *
+	 * Initing cipher operation. AES CTS mode is using IV vector, but for simplicity sake
+	 * this omnishare implementation is using vector that is always zero. Very bad.
+	 *
+	 * Call params: For IV see this function params
+	 *
+	 * Hint: TEE_CipherInit: TEE Core API p-155 */
+
+
+	/* TODO: Do cipher
+	 *
+	 * Everything is ready for actual operation. Here we are calling do-cipher operation and we
+	 * are deliberately using only do-final -function call, because it can take input data,
+	 * cipher it and finalzes cipher operation.
+	 *
+	 * Call params: srcData is in_data
+	 * Call params: srcLen in in_data_len
+	 * Call params: dstData is out_data
+	 * Call params: dstLen is out_data_len
+	 *
+	 * Hint: TEE_CipherDoFinal: TEE Core API p-157 */
+
 	if (tee_rv != TEE_SUCCESS)
 		OT_LOG(LOG_ERR, "TEE_CipherDoFinal failed: 0x%x", tee_rv);
 
 err:
-	/* Freeing operation. TEE_FreeOperation: TEE Core API p-144 */
-	TEE_FreeOperation(aes_operation);
+	/* TODO: Free AES operation
+	 *
+	 * We are finished with this AES operation. Free it
+	 *
+	 * Hint: TEE_FreeOperation: TEE Core API p-144 */
+
 	return tee_rv;
 }
 
@@ -685,19 +757,47 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 
 	/* Next we are initing the first key of keychain. It is previously decrypted AES key */
 
-	/* TEE_AllocateTransientObject: TEE Core API p-102 */
-	tee_rv = TEE_AllocateTransientObject(TEE_TYPE_AES,
-					     BYTES2BITS(OMS_AES_SIZE), &oms_AES_key_object);
+	/* TODO: Allocate AES object
+	 *
+	 * Previous RSA operation is decrypted the data blob and placed its results into aes_key
+	 * -variable. The blob contained an AES key. Next we will be using this data for allocating
+	 * and intializing an AES key object. All will start of by allocating an AES transient
+	 * object.
+	 *
+	 * Call params: Place our newly created AES object into oms_AES_key_object -variable
+	 * Call params: RSA operation decrypted aes key size into aes_key_size -variable
+	 * Call params: Object type is TEE_TYPE_AES
+	 *
+	 * Hint: TEE_AllocateTransientObject: TEE Core API p-102
+	 * Hint: Use BYTES2BITS macro for converting OMS_RSA_MODULU_SIZE to bits */
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_AllocateTransientObject failed: 0x%x", tee_rv);
 		return tee_rv;
 	}
 
-	/* Initing a TEE attribute. TEE_InitRefAttribute: TEE Core API p-111 */
-	TEE_InitRefAttribute(&tee_aes_attr, TEE_ATTR_SECRET_VALUE, aes_key, aes_key_size);
+	/* TODO: Init AES attribute
+	 *
+	 * AES key population function (see next todo) is taking TEE_Attribute as a input
+	 * parameter. TEE_Attribute can ne initialize manually or you can use GP provided function
+	 *
+	 * Call params: AES key is at aes_key -variable and length is aes_key_size -variable
+	 * Call params: AES attirbuteID is TEE_ATTR_SECRET_VALUE
+	 * Call params: Initialize our AES attribute into tee_aes_attr -variable.
+	 *
+	 * Hint: TEE_InitRefAttribute: TEE Core API p-111 */
 
-	/* Populating allocated object. TEE_PopulateTransientObject: TEE Core API p-107 */
-	tee_rv = TEE_PopulateTransientObject(oms_AES_key_object, &tee_aes_attr, 1);
+
+	/* TODO: Populate AES operation
+	 *
+	 * Populate our AES transient object with our AES attribute. This function call actually
+	 * setting/copying the key into AES object
+	 *
+	 * Call params: Our AES object
+	 * Call params: Our AES attribute
+	 *
+	 * Hint: TEE_PopulateTransientObject: TEE Core API p-107 */
+
 	if (tee_rv != TEE_SUCCESS) {
 		OT_LOG(LOG_ERR, "TEE_PopulateTransientObject failed: 0x%x", tee_rv);
 		/* TEE_FreeTransientObject: TEE Core API p-105 */
@@ -731,12 +831,20 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	/* Create entry point is trying to find the omnishare spesific RSA key and open it. If
 	 * key is not found, the key is created and saved into secure storage */
 
-	/* Using open persisten object for determing if RSA key exist. We also could be using
-	 * persistent storage enumerator for this task.
-	 * TEE_OpenPersistentObject: TEE Core API p-117 */
-	tee_rv = TEE_OpenPersistentObject(TEE_STORAGE_PRIVATE,
-					  oms_rsa_keypair_id, sizeof(oms_rsa_keypair_id),
-					  0, &oms_RSA_keypair_object);
+	/* TODO: Try open RSA object
+	 *
+	 * Open our RSA key persisten object from secure storage. RSA key is needed for decrypting
+	 * or ecrypting a root key. This function call will also determ if RSA key is found or not.
+	 * If is not found, it need to be created, but our task is just to open the RSA key.
+	 *
+	 * Call params: RSA persisten object ID is in oms_rsa_keypair_id -variable. See top of this
+	 * function
+	 * Call params: Place our newly opened RSA persisten object handle into
+	 * oms_RSA_keypair_object -variable.
+	 * Call params: Storage ID is TEE_STORAGE_PRIVATE
+	 *
+	 * Hint: TEE_OpenPersistentObject: TEE Core API p-117 */
+
 	if (tee_rv == TEE_SUCCESS) {
 		/* RSA key exist. No action needed. Note: Leaving handle open. */
 		return tee_rv;
@@ -767,11 +875,21 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 		goto out;
 	}
 
-	/* Saving key into secure storage and leaving the handle open
-	 * TEE_CreatePersistentObject: TEE Core API p-119 */
-	tee_rv = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE,
-					    oms_rsa_keypair_id, sizeof(oms_rsa_keypair_id),
-					    0, rsa_keypair, NULL, 0, &oms_RSA_keypair_object);
+	/* TODO: Create RSA object
+	 *
+	 * Code above is creating an RSA transient object and generates key into that. RSA key
+	 * needs to be saved into secure storage and in GP terminology it means creating a
+	 * persistent object.
+	 *
+	 * Call params: Storage ID is always TEE_STORAGE_PRIVATE
+	 * Call params: Object ID is oms_rsa_keypair_id -variable. See top of this function.
+	 * Call params: Attributes are taken from our transient object (rsa_keypair)
+	 * Call params: We will be needing a handle to newly created persisten object. This
+	 * needed, because RSA key is needed a bit later. Place our persisten object handle into
+	 * oms_RSA_keypair_object -variable
+	 *
+	 * Hint: TEE_CreatePersistentObject: TEE Core API p-119 */
+
 	if (tee_rv != TEE_SUCCESS)
 		OT_LOG(LOG_ERR, "TEE_CreatePersistentObject failed: 0x%x", tee_rv);
 
@@ -785,10 +903,18 @@ out:
 /* TA_DestroyEntryPoint: TEE Core API p-43 */
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
-	/* TA is going to be destroyed. It is a good practice close all our resources eg.
+	/* TODO: Release RSA object
+	 *
+	 * TA is going to be destroyed. It is a good practice close all our resources eg.
 	 * persistent object. We have oms_RSA_keypair_object open and it need to be closed
-	 * TEE_CloseObject: TEE Core API p-101 */
-	TEE_CloseObject(oms_RSA_keypair_object);
+	 *
+	 * At this point it is our jobs to close off our last open resource and it is a RSA key
+	 * object, which were opened at create session entry point function.
+	 *
+	 * Call params: RSA key is oms_RSA_keypair_object -variable
+	 *
+	 * Hint: TEE_CloseObject: TEE Core API p-101 */
+
 }
 
 /* TA_OpenSessionEntryPoint: TEE Core API p-44 */
@@ -799,10 +925,18 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
 	struct session_ctx *new_session_ctx = NULL;
 
-	/* Session context is controlled by TEE framework. It will be passed as a function
+	/* TODO: Malloc session CTX
+	 *
+	 * Session context is controlled by TEE framework. It will be passed as a function
 	 * parameter in invokeCMD and closeSession functions. Omnishare is using this parameter
-	 * for determing, which session is invoking command or closing session. */
-	new_session_ctx = TEE_Malloc(sizeof(struct session_ctx), 0);
+	 * for determing, which session is invoking command or closing session.
+	 *
+	 * Our task is to malloc space for Omnishare CTX
+	 *
+	 * Call params: Omnishare session context is struct session_ctx
+	 *
+	 * Hint: TEE_Malloc: TEE Core API p-83 */
+
 	if (new_session_ctx == NULL) {
 		OT_LOG(LOG_ERR, "Out of memory");
 		return TEE_ERROR_OUT_OF_MEMORY;
@@ -852,11 +986,16 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 		/* TEE_FreeTransientObject: TEE Core API p-105 */
 		TEE_FreeTransientObject(oms_AES_key_object);
 
-	/* Session context need to be freed, because this session is not any more are contacting
+	/* TODO: Free session CTX
+	 *
+	 * Session context need to be freed, because this session is not any more are contacting
 	 * TEE. Because destroy entrypoint is Void function, this is a last place where session
 	 * context can be freed or else we would leak a memory
-	 * TEE_Free: TEE Core API p-86 */
-	TEE_Free(session_ctx);
+	 *
+	 * Our task is to free omnishare session context
+	 *
+	 * Hint: TEE_Free: TEE Core API p-86 */
+
 }
 
 /* TA_InvokeCommandEntryPoint: TEE Core API p-47 */
