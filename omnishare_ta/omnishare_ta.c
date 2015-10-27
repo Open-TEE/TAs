@@ -18,18 +18,15 @@
 #include "tee_logging.h"
 
 /*
- * Commands that are supprted by the TA
- */
-#define CMD_CREATE_ROOT_KEY 0x00000001
-#define CMD_DO_CRYPTO 0X00000002
-
-
-/*
  * The OPERATIONS that can be performed by doCrypto
  */
-#define OM_OP_ENCRYPT_FILE 0
-#define OM_OP_DECRYPT_FILE 1
-#define OM_OP_CREATE_DIRECTORY_KEY 2
+#define OM_OP_ENCRYPT_FILE 10
+#define OM_OP_DECRYPT_FILE 11
+#define OM_OP_CREATE_DIRECTORY_KEY 12
+#define OM_OP_CREATE_FILE 13
+#define OM_OP_OPEN_FILE 14
+#define OM_OP_INIT 15
+#define OM_OP_CREATE_ROOT_KEY 16
 
 /*!
  * \brief The key_chain_data struct
@@ -44,12 +41,16 @@ struct key_chain_data {
 /* GP framework is defining session context parameter for opensession, invokecmd and closesession
  * function. This context is allocated and placed into this parameter. */
 struct session_ctx {
+	TEE_ObjectHandle key;
 	uint8_t session_type;
 };
 
 /* VaLid session types */
 #define OMS_CTX_TYPE_CREATE_ROOT_DIR    0x23
 #define OMS_CTX_TYPE_DO_CRYPTO          0x24
+#define OMS_CTX_TYPE_INIT		0x25
+#define OMS_CTX_TYPE_OPEN		0x26
+#define OMS_CTX_TYPE_CREATE_FILE	0x27
 
 /* Omnishare TEE spesific RSA key is generated once and only once at create entry point function.
  * RSA key is saved into secure storage (ss). */
@@ -337,7 +338,8 @@ static TEE_Result get_dir_key(uint32_t paramTypes,
 	 * and it should be as an input parameter */
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_MEMREF_INPUT) {
 		OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted memref input");
-		return TEE_ERROR_BAD_PARAMETERS;
+		tee_rv = TEE_ERROR_BAD_PARAMETERS;
+		goto err;
 	}
 
 	/* Key chain is at index ZERO and it is a buffe parameter */
@@ -401,7 +403,8 @@ static TEE_Result do_crypto_create_dir_key(TEE_ObjectHandle dir_key, /* Opaque h
 	/* First of all it need to be check if the output buffer at index three is big enough
 	 * If is not big enough, return TEE_ERROR_SHORT_BUFFER error code and required size */
 	if (aes_key_size > params[3].memref.size) {
-		OT_LOG(LOG_ERR, "Output buffer too short");
+		OT_LOG(LOG_ERR, "Output buffer too short, only (%ld), needed(%d)",
+		       params[3].memref.size, aes_key_size);
 		params[3].memref.size = aes_key_size;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
@@ -426,20 +429,23 @@ static TEE_Result do_crypto_create_dir_key(TEE_ObjectHandle dir_key, /* Opaque h
  * \return
  */
 static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque handle */
-					 TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
+					 uint8_t *src,
+					 uint32_t *src_len,
+					 uint8_t *dst,
+					 uint32_t *dst_len) /* TEE_Param: TEE Core API p-36 */
 {
 	uint32_t aes_key_size = OMS_AES_SIZE;
 	uint8_t aes_key[OMS_AES_SIZE];
 	TEE_ObjectHandle new_file_key = NULL; /* Opaque handle */
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
-	uint32_t write_bytes = params[3].memref.size;
+	uint32_t write_bytes = *dst_len;
 
 	/* If output buffer is big enough to hold the encrypted key and encrypted data.
 	 * encrypted data is same size as a plain data. If buffer is not big enough,
 	 * return TEE_ERROR_SHORT_BUFFER and required size */
-	if (aes_key_size + params[2].memref.size > params[3].memref.size) {
+	if (*src_len > *dst_len) {
 		OT_LOG(LOG_ERR, "Output buffer too short");
-		params[3].memref.size = aes_key_size + params[2].memref.size;
+		*dst_len = aes_key_size + *src_len;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
@@ -450,24 +456,21 @@ static TEE_Result do_crypto_encrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 
 	/* Encrypt file key into beginning of the file */
 	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    aes_key, aes_key_size,
-				    params[3].memref.buffer, &write_bytes);
+				    aes_key, aes_key_size, dst, &write_bytes);
 	if (tee_rv != TEE_SUCCESS)
 		goto out;
 
 	/* Reduce the ouput buffer size, because we just wrote the key into output buffer */
-	params[3].memref.size -= write_bytes;
+	*dst_len -= write_bytes;
 
 	/* Encrypt the plain data with newly created key */
 	tee_rv = wrap_aes_operation(new_file_key, TEE_MODE_ENCRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    params[2].memref.buffer, params[2].memref.size,
-			(uint8_t *)params[3].memref.buffer + write_bytes,
-			(uint32_t *)&params[3].memref.size);
+				    src, *src_len, dst + write_bytes, dst_len);
 
 	/* Output buffer size is holding the "encrypted" plain data size, but this buffer is
 	 * containing the file key at the beginning of file and therefore we are adding also
 	 * encrypted key size into this */
-	params[3].memref.size += write_bytes;
+	*dst_len += write_bytes;
 out:
 	/* TEE_FreeTransientObject: TEE Core API p-105 */
 	TEE_FreeTransientObject(new_file_key);
@@ -482,7 +485,10 @@ out:
  * \return
  */
 static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque handle */
-					 TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
+					 uint8_t *src,
+					 uint32_t *src_len,
+					 uint8_t *dst,
+					 uint32_t *dst_len) /* TEE_Param: TEE Core API p-36 */
 {
 	uint32_t aes_key_size = OMS_AES_SIZE;
 	uint8_t aes_key[OMS_AES_SIZE];
@@ -491,22 +497,21 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 	TEE_Result tee_rv; /* Return values: TEE Core API p-31 */
 
 	/* Zero is not a valid input size */
-	if (params[2].memref.size == 0) {
+	if (*src_len == 0) {
 		OT_LOG(LOG_ERR, "Input buffer too short");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
 	/* If output buffer is big enough. If not, return TEE_ERROR_SHORT_BUFFER and required size*/
-	if (params[2].memref.size - aes_key_size > params[3].memref.size) {
+	if (*src_len - aes_key_size > *dst_len) {
 		OT_LOG(LOG_ERR, "Output buffer too short");
-		params[3].memref.size = aes_key_size + params[2].memref.size;
+		*dst_len = aes_key_size + *src_len;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
 	/* Decrypt file key with directory key */
 	tee_rv = wrap_aes_operation(dir_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    params[2].memref.buffer, OMS_AES_SIZE,
-				    aes_key, &aes_key_size);
+				    src, OMS_AES_SIZE, aes_key, &aes_key_size);
 	if (tee_rv != TEE_SUCCESS)
 		return tee_rv;
 
@@ -531,9 +536,7 @@ static TEE_Result do_crypto_decrypt_file(TEE_ObjectHandle dir_key, /* Opaque han
 
 	/* Decrypting the file */
 	tee_rv = wrap_aes_operation(file_key, TEE_MODE_DECRYPT, oms_aes_iv, OMS_AES_IV_SIZE,
-				    (uint8_t *)params[2].memref.buffer + OMS_AES_SIZE,
-			params[2].memref.size - OMS_AES_SIZE,
-			params[3].memref.buffer, (uint32_t *)&params[3].memref.size);
+				    src + OMS_AES_SIZE, *src_len - OMS_AES_SIZE, dst, dst_len);
 
 out:
 	/* TEE_FreeTransientObject: TEE Core API p-105 */
@@ -551,10 +554,12 @@ out:
  * \return GP return values.
  */
 static TEE_Result do_crypto(uint32_t paramTypes,
-			    TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
+			    TEE_Param *params,
+			    uint32_t commandID,
+			    struct session_ctx *sess_ctx) /* TEE_Param: TEE Core API p-36 */
 {
-	TEE_ObjectHandle dir_key = NULL; /* Opaque handle */
-	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+	uint8_t *src, *dst;
+	uint32_t *src_len, *dst_len;
 
 	/* ParamTypes parameter is used for checking parameters type.
 	 * It just agreed between CA and TA. */
@@ -564,50 +569,33 @@ static TEE_Result do_crypto(uint32_t paramTypes,
 	 *
 	 * TEE_PARAM_TYPE_GET: TEE Core API p-48
 	 * TEE_PARAM_TYPE_XXX: TEE Core API p-37*/
-	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_VALUE_INPUT) {
-		OT_LOG(LOG_ERR, "Bad parameter at index 1: expexted value input");
+	if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_MEMREF_INPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted memref input");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if ((params[1].value.a == OM_OP_ENCRYPT_FILE ||
-	     params[1].value.a == OM_OP_DECRYPT_FILE) &&
-	    TEE_PARAM_TYPE_GET(paramTypes, 2) != TEE_PARAM_TYPE_MEMREF_INPUT) {
-		OT_LOG(LOG_ERR, "Bad parameter at index 2: expexted memref input");
+	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_MEMREF_OUTPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 1: expexted memref output");
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if (TEE_PARAM_TYPE_GET(paramTypes, 3) != TEE_PARAM_TYPE_MEMREF_OUTPUT) {
-		OT_LOG(LOG_ERR, "Bad parameter at index 3: expexted memref output");
-		return TEE_ERROR_BAD_PARAMETERS;
-	}
-
-	/* Get the current directory key */
-	tee_rv = get_dir_key(paramTypes, params, &dir_key);
-	if (tee_rv != TEE_SUCCESS)
-		return tee_rv;
+	src = params[0].memref.buffer;
+	src_len = (uint32_t *)&params[0].memref.size;
+	dst = params[1].memref.buffer;
+	dst_len = (uint32_t *)&params[1].memref.size;
 
 	/* Do spesific crypto operation. Operation type is at index 1 and it is in value A member */
-	switch (params[1].value.a) {
-	case OM_OP_CREATE_DIRECTORY_KEY:
-		tee_rv = do_crypto_create_dir_key(dir_key, params);
-		break;
-
+	switch (commandID) {
 	case OM_OP_ENCRYPT_FILE:
-		tee_rv = do_crypto_encrypt_file(dir_key, params);
-		break;
+		return do_crypto_encrypt_file(sess_ctx->key, src, src_len, dst, dst_len);
 
 	case OM_OP_DECRYPT_FILE:
-		tee_rv = do_crypto_decrypt_file(dir_key, params);
+		return do_crypto_decrypt_file(sess_ctx->key, src, src_len, dst, dst_len);
 		break;
 	default:
 		OT_LOG(LOG_ERR, "Unknown crypto command ID");
-		tee_rv = TEE_ERROR_BAD_PARAMETERS;
-		break;
+		return TEE_ERROR_BAD_PARAMETERS;
 	}
-
-	/* TEE_FreeTransientObject: TEE Core API p-105 */
-	TEE_FreeTransientObject(dir_key);
-	return tee_rv;
 }
 
 /*!
@@ -657,12 +645,18 @@ static TEE_Result create_root_key(uint32_t paramTypes,
  * \param params
  * \return GP return values
  */
-static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
+static TEE_Result set_oms_aes_key(uint32_t paramTypes,
+				  TEE_Param *params) /* TEE_Param: TEE Core API p-36 */
 {
 	uint32_t aes_key_size = OMS_RSA_MODULO_SIZE;
 	uint8_t aes_key[OMS_RSA_MODULO_SIZE];
 	TEE_Attribute tee_aes_attr = {0}; /* TEE_Attribute: TEE Core API p-92 */
 	TEE_Result tee_rv = TEE_SUCCESS; /* Return values: TEE Core API p-31 */
+
+	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_VALUE_INPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted value input");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
 
 	/* Expected input buffer should be at least as big as omnishare RSA modulo.
 	 * Input buffer is at index zero */
@@ -706,6 +700,29 @@ static TEE_Result set_oms_aes_key(TEE_Param *params) /* TEE_Param: TEE Core API 
 
 	/* If everything went fine, now we have open to global object handle for ready to use.
 	 * One is a RSA key and one is AES key */
+
+	return tee_rv;
+}
+
+static TEE_Result create_file(uint32_t paramTypes,
+			      TEE_Param *params)
+{
+	TEE_ObjectHandle dir_key;
+	TEE_Result tee_rv;
+
+	if (TEE_PARAM_TYPE_GET(paramTypes, 3) != TEE_PARAM_TYPE_MEMREF_OUTPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 3: expexted memref output");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Get the current directory key */
+	tee_rv = get_dir_key(paramTypes, params, &dir_key);
+	if (tee_rv != TEE_SUCCESS)
+		return tee_rv;
+
+	tee_rv = do_crypto_create_dir_key(dir_key, params);
+
+	TEE_FreeTransientObject(dir_key);
 
 	return tee_rv;
 }
@@ -808,23 +825,26 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
-	/* Using paramTypes for determing the open session type (create root key or crypto
-	 * operation). This is one way of doing this, because in this case we have only two
-	 * possible options. Another way is just use one of the parameters for determining
-	 * open session type eg paramType 3 is value parameter */
-	if (TEE_PARAM_TYPE_GET(paramTypes, 0) == TEE_PARAM_TYPE_NONE &&
-	    TEE_PARAM_TYPE_GET(paramTypes, 1) == TEE_PARAM_TYPE_NONE &&
-	    TEE_PARAM_TYPE_GET(paramTypes, 2) == TEE_PARAM_TYPE_NONE &&
-	    TEE_PARAM_TYPE_GET(paramTypes, 3) == TEE_PARAM_TYPE_NONE) {
+	if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_VALUE_INPUT) {
+		OT_LOG(LOG_ERR, "Bad parameter at index 0: expexted value input");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	if (params[1].value.a == OM_OP_CREATE_ROOT_KEY) {
 		new_session_ctx->session_type = OMS_CTX_TYPE_CREATE_ROOT_DIR;
 		tee_rv = TEE_SUCCESS;
 
-	} else if (TEE_PARAM_TYPE_GET(paramTypes, 0) == TEE_PARAM_TYPE_MEMREF_INPUT &&
-		   TEE_PARAM_TYPE_GET(paramTypes, 1) == TEE_PARAM_TYPE_NONE &&
-		   TEE_PARAM_TYPE_GET(paramTypes, 2) == TEE_PARAM_TYPE_NONE &&
-		   TEE_PARAM_TYPE_GET(paramTypes, 3) == TEE_PARAM_TYPE_NONE) {
-		new_session_ctx->session_type = OMS_CTX_TYPE_DO_CRYPTO;
-		tee_rv = set_oms_aes_key(params);
+	} else if (params[1].value.a == OM_OP_INIT) {
+		new_session_ctx->session_type = OMS_CTX_TYPE_INIT;
+		tee_rv = set_oms_aes_key(paramTypes, params);
+
+	} else if (params[1].value.a == OM_OP_OPEN_FILE) {
+		new_session_ctx->session_type = OMS_CTX_TYPE_OPEN;
+		tee_rv = get_dir_key(paramTypes, params, &new_session_ctx->key);
+
+	} else if (params[1].value.a == OM_OP_CREATE_FILE) {
+		new_session_ctx->session_type = OMS_CTX_TYPE_CREATE_FILE;
+		tee_rv = create_file(paramTypes, params);
 
 	} else {
 		OT_LOG(LOG_ERR, "Bad parameter at params: not know combination : 0x%x", paramTypes);
@@ -833,11 +853,14 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 
 	/* Session is not opened if return value going to be something else than TEE_SUCCESS and
 	 * in that case we need all memory that we are allocated in Open Session function */
-	if (tee_rv != TEE_SUCCESS)
+	if (tee_rv != TEE_SUCCESS) {
+		OT_LOG(LOG_ERR, "Failed to invoke function (0x%x), reason (0x%x)",
+		       params[1].value.a, tee_rv);
 		 /* TEE_Free: TEE Core API p-86 */
 		TEE_Free(new_session_ctx);
-	else
+	} else {
 		*sessionContext = new_session_ctx;
+	}
 
 	return tee_rv;
 }
@@ -848,9 +871,12 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 	struct session_ctx *session_ctx = sessionContext;
 
 	/* Free oms_AES_key_object if session type is OMS_CTX_TYPE_DO_CRYPTO */
-	if (session_ctx->session_type == OMS_CTX_TYPE_DO_CRYPTO)
+	if (session_ctx->session_type == OM_OP_INIT)
 		/* TEE_FreeTransientObject: TEE Core API p-105 */
 		TEE_FreeTransientObject(oms_AES_key_object);
+
+	if (session_ctx->session_type == OM_OP_OPEN_FILE)
+		TEE_FreeTransientObject(session_ctx->key);
 
 	/* Session context need to be freed, because this session is not any more are contacting
 	 * TEE. Because destroy entrypoint is Void function, this is a last place where session
@@ -869,11 +895,12 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 
 	/* Invoke CMD is just a commandID parse. */
 	switch (commandID) {
-	case CMD_CREATE_ROOT_KEY:
+	case OM_OP_CREATE_ROOT_KEY:
 		return create_root_key(paramTypes, params);
 
-	case CMD_DO_CRYPTO:
-		return do_crypto(paramTypes, params);
+	case OM_OP_ENCRYPT_FILE:
+	case OM_OP_DECRYPT_FILE:
+		return do_crypto(paramTypes, params, commandID, sessionContext);
 
 	default:
 		OT_LOG(LOG_ERR, "Unknown command ID");
