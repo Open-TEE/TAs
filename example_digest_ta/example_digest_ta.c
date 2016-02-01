@@ -110,15 +110,19 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t paramTypes,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	return TEE_AllocateOperation((TEE_OperationHandle *)sessionContext,
-				     hash, TEE_MODE_DIGEST, 0);
+	/* TODO: Allocate a digest operation and save the operation to a global context
+	 * SEE Section 6.2 TEE Core API
+	 */
+	return 0;
 }
 
 void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
 {
 	OT_LOG(LOG_ERR, "Calling the Close session entry point");
 
-	TEE_FreeOperation(sessionContext);
+	/* TODO: Free the global operation
+	 * See section 6.2 TEE Core API
+	 */
 }
 
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
@@ -132,7 +136,9 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 
 	if (commandID == HASH_RESET) {
 
-		TEE_ResetOperation(sessionContext);
+		/* TODO Reset the operation
+		 * See Section 6.2 TEE Core API
+		 */
 
 	} else if (commandID == HASH_UPDATE) {
 
@@ -141,7 +147,10 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 			return TEE_ERROR_BAD_PARAMETERS;
 		}
 
-		TEE_DigestUpdate(sessionContext, params[0].memref.buffer, params[0].memref.size);
+		/* TODO: Update the digest, updating the global context
+		 * SEE section 6.3 TEE Core API
+		 * NB, CHECK the corresponding CA code to see the paramaters used (example_sha1_ca)
+		 */
 
 	} else if (commandID == HASH_DO_FINAL) {
 
@@ -156,9 +165,11 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 			return TEE_ERROR_BAD_PARAMETERS;
 		}
 
-		tee_rv = TEE_DigestDoFinal(sessionContext, params[0].memref.buffer,
-				params[0].memref.size, params[1].memref.buffer,
-				(uint32_t *)&params[1].memref.size);
+		/* TODO Finalize the digest and return the RESULTS to the caller
+		 * SEE Section 6.3 TEE Core API
+		 * NB Check the corresponding CA code to see the paramaters used (example_sha1_ca)
+		 */
+		tee_rv = 0;
 
 	} else {
 		OT_LOG(LOG_ERR, "Unknow command ID");
