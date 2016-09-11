@@ -327,7 +327,7 @@ static TEE_Result get_dir_key(uint32_t paramTypes,
 	/* Key chain first key is cached AES key, which were provided at open session function.
 	 * Copiying the first AES key into object handle
 	 * TEE_CopyObjectAttributes: TEE Core API p-112 */
-	TEE_CopyObjectAttributes(*dir_key, oms_AES_key_object);
+	TEE_CopyObjectAttributes1(*dir_key, oms_AES_key_object);
 
 	/* If no key chain is provided, the first directory is created */
 	if (TEE_PARAM_TYPE_GET(paramTypes, 0) == TEE_PARAM_TYPE_NONE)

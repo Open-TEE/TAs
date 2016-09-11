@@ -230,7 +230,7 @@ static uint32_t read_token_from_storage(CK_TOKEN_INFO *token)
 	if (ret != TEE_SUCCESS)
 		return TEE_ERROR_ITEM_NOT_FOUND;
 
-	TEE_GetObjectInfo(object, &info);
+	TEE_GetObjectInfo1(object, &info);
 
 	if (sizeof(CK_TOKEN_INFO) != info.dataSize) {
 		ret = TEE_ERROR_SHORT_BUFFER;
@@ -466,7 +466,7 @@ CK_RV check_password(CK_USER_TYPE user_type, const char *passwd, uint32_t passwd
 	if (ret != TEE_SUCCESS)
 		return CKR_USER_PIN_NOT_INITIALIZED;
 
-	TEE_GetObjectInfo(object, &info);
+	TEE_GetObjectInfo1(object, &info);
 
 	if (passwd_len != info.dataSize) {
 		ret = CKR_PIN_LEN_RANGE;

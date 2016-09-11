@@ -548,7 +548,7 @@ static CK_RV create_key_object(struct pTemplate *ptemplate,
 	return ck_rv;
 
 err_2:
-	TEE_CloseAndDeletePersistentObject(pers_object);
+	TEE_CloseAndDeletePersistentObject1(pers_object);
 err_1:
 	release_object_id(*new_obj_id);
 	*new_obj_id = CKR_OBJECT_HANDLE_INVALID;
@@ -925,7 +925,7 @@ CK_RV get_attr_from_object(TEE_ObjectHandle object,
 	CK_RV ck_rv;
 
 	/* Function is saving data position and setting it back before exiting */
-	TEE_GetObjectInfo(object, &object_info);
+	TEE_GetObjectInfo1(object, &object_info);
 
 	/* Needing a object header. Object header is storing template attribute count */
 	ck_rv = get_object_header(object, 0, &obj_header);
@@ -1190,7 +1190,7 @@ TEE_Result object_get_attr_value(struct application *app,
 		}
 
 		/* Write result to out buffer */
-		write_attr2buffer(params[0].memref.buffer, &out_buf_pos, &obj_attr);
+		write_attr2buffer((uint8_t *)params[0].memref.buffer, &out_buf_pos, &obj_attr);
 
 		/* get_attr_from_object function malloc space for pValue */
 		TEE_Free(obj_attr.pValue);
@@ -1220,7 +1220,7 @@ void delete_object(CK_ULONG obj_id)
 				     TEE_DATA_FLAG_ACCESS_WRITE_META, &del_obj) != TEE_SUCCESS)
 		return;
 
-	TEE_CloseAndDeletePersistentObject(del_obj);
+	TEE_CloseAndDeletePersistentObject1(del_obj);
 }
 
 TEE_Result find_objects_init(struct application *app,
@@ -1632,7 +1632,7 @@ TEE_Result object_set_attr_value(struct application *app,
 	/* Remove original object and rename temporary object and close object.
 	 * Note: Object might be lost (original) if temporary object renaming failing or
 	 * if can't add object to session */
-	TEE_CloseAndDeletePersistentObject(set_object);
+	TEE_CloseAndDeletePersistentObject1(set_object);
 	set_object = NULL;
 
 	tee_rv = TEE_RenamePersistentObject(cpy_set_object,
@@ -1650,7 +1650,7 @@ err_4:
 err_3:
 	TEE_Free(obj_attr.pValue);
 err_2:
-	TEE_CloseAndDeletePersistentObject(cpy_set_object);
+	TEE_CloseAndDeletePersistentObject1(cpy_set_object);
 err_1:
 	/* Something went wrong, zero out out buffer and return */
 	TEE_MemFill(params[0].memref.buffer, 0, params[2].value.a);
